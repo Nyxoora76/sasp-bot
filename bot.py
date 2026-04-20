@@ -30,9 +30,19 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+
+class SASPBot(commands.Bot):
+    async def setup_hook(self):
+        self.add_view(RecruitmentPanelView())
+        self.add_view(RDVPanelView())
+        self.add_view(CloseTicketView())
+        print("Views persistantes enregistrées dans setup_hook().")
+
+
+bot = SASPBot(command_prefix="!", intents=intents)
 
 pending_forms = {}
+
 
 # ===== HELPERS =====
 def get_role_by_name(guild: discord.Guild, role_name: str):
@@ -121,6 +131,96 @@ def build_refuse_embed(recruiter_name: str, motif: str) -> discord.Embed:
     embed.set_image(url=REFUSE_IMAGE_URL)
     embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
     return embed
+
+
+# ===== VIEWS =====
+class ContinueRPView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=300)
+
+    @discord.ui.button(
+        label="➡️ Continuer vers la partie RP",
+        style=discord.ButtonStyle.primary
+    )
+    async def continue_rp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(RecruitmentRPModal())
+
+
+class CloseTicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="🔒 Fermer le ticket",
+        style=discord.ButtonStyle.danger,
+        custom_id="close_ticket_button_v1"
+    )
+    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Fermeture du ticket dans 3 secondes...", ephemeral=True)
+        await interaction.channel.delete(delay=3)
+
+
+class RecruitmentPanelView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="🚔 Recrutement",
+        style=discord.ButtonStyle.primary,
+        custom_id="recruitment_panel_button_v1"
+    )
+    async def recrutement(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(RecruitmentHRPModal())
+
+
+class RDVPanelView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="📅 Prise de rendez-vous",
+        style=discord.ButtonStyle.primary,
+        custom_id="rdv_button_v1"
+    )
+    async def rdv(self, interaction: discord.Interaction, button: discord.ui.Button):
+        channel = await create_simple_ticket(interaction.guild, interaction.user, "rdv")
+        if not channel:
+            await interaction.response.send_message(
+                "Impossible de créer le ticket. Vérifie la catégorie `tickets`.",
+                ephemeral=True
+            )
+            return
+        await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
+
+    @discord.ui.button(
+        label="💼 Proposition de contrat",
+        style=discord.ButtonStyle.secondary,
+        custom_id="contrat_button_v1"
+    )
+    async def contrat(self, interaction: discord.Interaction, button: discord.ui.Button):
+        channel = await create_simple_ticket(interaction.guild, interaction.user, "contrat")
+        if not channel:
+            await interaction.response.send_message(
+                "Impossible de créer le ticket. Vérifie la catégorie `tickets`.",
+                ephemeral=True
+            )
+            return
+        await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
+
+    @discord.ui.button(
+        label="👮 Police Academy",
+        style=discord.ButtonStyle.success,
+        custom_id="academy_button_v1"
+    )
+    async def academy(self, interaction: discord.Interaction, button: discord.ui.Button):
+        channel = await create_simple_ticket(interaction.guild, interaction.user, "academy")
+        if not channel:
+            await interaction.response.send_message(
+                "Impossible de créer le ticket. Vérifie la catégorie `tickets`.",
+                ephemeral=True
+            )
+            return
+        await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
 
 # ===== TICKETS =====
@@ -264,73 +364,6 @@ async def create_simple_ticket(guild: discord.Guild, user: discord.Member, ticke
 
     await channel.send(content=user.mention, embed=embed, view=CloseTicketView())
     return channel
-
-
-# ===== VIEWS =====
-class ContinueRPView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=300)
-
-    @discord.ui.button(label="➡️ Continuer vers la partie RP", style=discord.ButtonStyle.primary)
-    async def continue_rp(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(RecruitmentRPModal())
-
-
-class CloseTicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=300)
-
-    @discord.ui.button(label="🔒 Fermer le ticket", style=discord.ButtonStyle.danger)
-    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Fermeture du ticket dans 3 secondes...", ephemeral=True)
-        await interaction.channel.delete(delay=3)
-
-
-class RecruitmentPanelView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=300)
-
-    @discord.ui.button(label="🚔 Recrutement", style=discord.ButtonStyle.primary)
-    async def recrutement(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(RecruitmentHRPModal())
-
-
-class RDVPanelView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=300)
-
-    @discord.ui.button(label="📅 Prise de rendez-vous", style=discord.ButtonStyle.primary)
-    async def rdv(self, interaction: discord.Interaction, button: discord.ui.Button):
-        channel = await create_simple_ticket(interaction.guild, interaction.user, "rdv")
-        if not channel:
-            await interaction.response.send_message(
-                "Impossible de créer le ticket. Vérifie la catégorie `tickets`.",
-                ephemeral=True
-            )
-            return
-        await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
-
-    @discord.ui.button(label="💼 Proposition de contrat", style=discord.ButtonStyle.secondary)
-    async def contrat(self, interaction: discord.Interaction, button: discord.ui.Button):
-        channel = await create_simple_ticket(interaction.guild, interaction.user, "contrat")
-        if not channel:
-            await interaction.response.send_message(
-                "Impossible de créer le ticket. Vérifie la catégorie `tickets`.",
-                ephemeral=True
-            )
-            return
-        await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
-
-    @discord.ui.button(label="👮 Police Academy", style=discord.ButtonStyle.success)
-    async def academy(self, interaction: discord.Interaction, button: discord.ui.Button):
-        channel = await create_simple_ticket(interaction.guild, interaction.user, "academy")
-        if not channel:
-            await interaction.response.send_message(
-                "Impossible de créer le ticket. Vérifie la catégorie `tickets`.",
-                ephemeral=True
-            )
-            return
-        await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
 
 # ===== MODALS =====
@@ -595,7 +628,6 @@ async def candidature_command_error(ctx, error):
         await ctx.send(f"❌ Erreur : {error}")
 
 
-# ===== EVENT =====
 @bot.event
 async def on_ready():
     print(f"Connecté en tant que {bot.user}")
