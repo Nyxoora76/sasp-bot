@@ -23,6 +23,10 @@ LOGO_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/149533541
 ACCEPT_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335357946794155/Capture_decran_2026-04-19_100740.png"
 REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335388783317204/Capture_decran_2026-04-19_100754.png"
 
+# ===== GIF ENTRETIEN =====
+ENTRETIEN_ACCEPT_GIF_URL = "https://media.discordapp.net/attachments/TON_GIF_ACCEPT.gif"
+ENTRETIEN_REFUSE_GIF_URL = "https://media.discordapp.net/attachments/TON_GIF_REFUSE.gif"
+
 DELAI_REFUS_JOURS = 2
 
 # ===== BOT =====
@@ -129,6 +133,28 @@ def build_refuse_embed(recruiter_name: str, motif: str) -> discord.Embed:
     )
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=REFUSE_IMAGE_URL)
+    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    return embed
+
+
+def build_entretien_accept_embed(recruiter_name: str) -> discord.Embed:
+    embed = discord.Embed(
+        title="Résultat entretien",
+        description="✅ Félicitations, votre entretien est validé. Vous avez 30 jours pour poursuivre votre parcours.",
+        color=discord.Color.green()
+    )
+    embed.set_image(url=ENTRETIEN_ACCEPT_GIF_URL)
+    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    return embed
+
+
+def build_entretien_refuse_embed(recruiter_name: str, motif: str) -> discord.Embed:
+    embed = discord.Embed(
+        title="Résultat entretien",
+        color=discord.Color.red()
+    )
+    embed.add_field(name="Motif :", value=motif, inline=False)
+    embed.set_image(url=ENTRETIEN_REFUSE_GIF_URL)
     embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
     return embed
 
@@ -615,8 +641,24 @@ async def refuse(ctx, membre: discord.Member, *, motif: str):
     await ctx.send(content=membre.mention, embed=embed)
 
 
+@bot.command()
+@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
+async def entretien_ok(ctx, membre: discord.Member):
+    embed = build_entretien_accept_embed(str(ctx.author))
+    await ctx.send(content=membre.mention, embed=embed)
+
+
+@bot.command()
+@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
+async def entretien_refus(ctx, membre: discord.Member, *, motif: str):
+    embed = build_entretien_refuse_embed(str(ctx.author), motif)
+    await ctx.send(content=membre.mention, embed=embed)
+
+
 @accepte.error
 @refuse.error
+@entretien_ok.error
+@entretien_refus.error
 async def candidature_command_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("❌ Tu n'as pas le rôle autorisé pour utiliser cette commande.")
