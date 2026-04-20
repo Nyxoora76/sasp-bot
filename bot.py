@@ -491,11 +491,11 @@ async def test(ctx):
 @bot.command()
 async def manuel(ctx):
     embed = discord.Embed(
-        title="Postuler au sein de la San Andreas Metropolitan Police",
+        title="Postuler au sein de la San Andreas State Police",
         description=(
             "Chères candidates, chers candidats de l'Académie de Police !\n\n"
             "Nous vous rappelons que les recrutements sont constamment ouverts pour "
-            "intégrer notre exceptionnel service, la San Andreas Metropolitan Police."
+            "intégrer notre exceptionnel service, la San Andreas State Police."
         ),
         color=discord.Color.from_rgb(88, 20, 74)
     )
@@ -520,7 +520,7 @@ async def manuel(ctx):
             "🔹 Disposer d'un casier judiciaire vierge dans l'État de San Andreas\n"
             "🔹 Disposer d'un permis de conduire valide (Permis B)\n"
             "🔹 Être en bonne condition physique et mentale, pratiquer du sport fréquemment\n"
-            "🔹 Ne pas avoir commis d'acte illégal avec votre personnage, dans le cas contraire vous serez licencié du SAMP + wipe."
+            "🔹 Ne pas avoir commis d'acte illégal avec votre personnage, dans le cas contraire vous serez licencié du SASP + wipe."
         ),
         inline=False
     )
