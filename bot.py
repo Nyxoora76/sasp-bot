@@ -20,8 +20,11 @@ DISTRICT_NAME = "Mission Row"
 MANUAL_URL = "https://docs.google.com/presentation/d/102XSbfok9SQtR7faQkzvRZBhyzThu90muxOMMo6j6pY/edit?usp=drivesdk"
 
 LOGO_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335411726155876/Capture_decran_2026-04-19_100807.png"
-ACCEPT_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335357946794155/Capture_decran_2026-04-19_100740.png"
-REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335388783317204/Capture_decran_2026-04-19_100754.png"
+
+CANDIDATURE_ACCEPT_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1499676174589235260/ChatGPT_Image_1_mai_2026_09_37_35.png"
+CANDIDATURE_REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1499676432979460176/ChatGPT_Image_1_mai_2026_09_38_22.png"
+ENTRETIEN_ACCEPT_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1499676096378048584/ChatGPT_Image_1_mai_2026_09_37_13.png"
+ENTRETIEN_REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1499676075691868170/ChatGPT_Image_1_mai_2026_09_37_08.png"
 
 DELAI_REFUS_JOURS = 2
 
@@ -83,49 +86,88 @@ def format_date_fr(date_obj):
     return f"{date_obj.day} {mois_fr[date_obj.month]} {date_obj.year} à {date_obj.strftime('%H:%M')}"
 
 
-# ===== EMBEDS RESULTATS =====
-def build_accept_embed(recruiter_name, membre):
+# ===== EMBEDS CANDIDATURE =====
+def build_candidature_accept_embed(recruiter_name, membre):
     embed = discord.Embed(
-        title="Entretien validé ✅",
-        description=(
-            "✅ Félicitations, votre entretien est validé.\n"
-            "Vous avez désormais **30 jours** pour poursuivre votre parcours."
-        ),
+        title="Candidature Acceptée — Mission Row",
+        description=f"Le dossier de {membre.mention} a été retenu.",
         color=discord.Color.green()
     )
 
-    embed.add_field(name="Candidat :", value=membre.mention, inline=False)
-    embed.add_field(name="District :", value=DISTRICT_NAME, inline=False)
+    embed.add_field(
+        name="Instructions :",
+        value="Veuillez lire attentivement les salons pour passer votre entretien.",
+        inline=False
+    )
+    embed.add_field(name="Candidat", value=membre.mention, inline=False)
+    embed.add_field(name="District", value=DISTRICT_NAME, inline=False)
 
     embed.set_thumbnail(url=LOGO_URL)
-    embed.set_image(url=ACCEPT_IMAGE_URL)
+    embed.set_image(url=CANDIDATURE_ACCEPT_IMAGE_URL)
     embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
     return embed
 
 
-def build_refuse_embed(recruiter_name, membre, motif):
+def build_candidature_refuse_embed(recruiter_name, membre, motif):
     date_repost = datetime.now() + timedelta(days=DELAI_REFUS_JOURS)
 
     embed = discord.Embed(
-        title="Entretien refusé ❌",
-        description="❌ Votre entretien a été refusé.",
+        title="Candidature Refusée — Mission Row",
+        description=f"Le dossier de {membre.mention} n'a pas été retenu.",
         color=discord.Color.red()
     )
 
-    embed.add_field(name="Candidat :", value=membre.mention, inline=False)
-    embed.add_field(name="District :", value=DISTRICT_NAME, inline=False)
-    embed.add_field(name="Motif :", value=motif, inline=False)
     embed.add_field(
-        name="Nouvelle candidature :",
+        name="Information",
         value=(
-            f"Vous pourrez repostuler dans **{DELAI_REFUS_JOURS} jours**, "
-            f"soit le **{format_date_fr(date_repost)}**."
+            "Vous êtes invité à réessayer dans deux jours.\n"
+            f"Votre compte pourra à nouveau postuler le **{format_date_fr(date_repost)}**."
         ),
         inline=False
     )
+    embed.add_field(name="Motif :", value=motif, inline=False)
+    embed.add_field(name="Candidat", value=membre.mention, inline=False)
+    embed.add_field(name="District", value=DISTRICT_NAME, inline=False)
 
     embed.set_thumbnail(url=LOGO_URL)
-    embed.set_image(url=REFUSE_IMAGE_URL)
+    embed.set_image(url=CANDIDATURE_REFUSE_IMAGE_URL)
+    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    return embed
+
+
+# ===== EMBEDS ENTRETIEN =====
+def build_entretien_accept_embed(recruiter_name, membre):
+    embed = discord.Embed(
+        title="Entretien Validé — Mission Row",
+        description=(
+            "Entretien validé : ✅ Félicitations, votre entretien est validé.\n"
+            "Vous avez **30 jours** pour poursuivre votre parcours."
+        ),
+        color=discord.Color.green()
+    )
+
+    embed.add_field(name="Candidat", value=membre.mention, inline=False)
+    embed.add_field(name="District", value=DISTRICT_NAME, inline=False)
+
+    embed.set_thumbnail(url=LOGO_URL)
+    embed.set_image(url=ENTRETIEN_ACCEPT_IMAGE_URL)
+    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    return embed
+
+
+def build_entretien_refuse_embed(recruiter_name, membre, motif):
+    embed = discord.Embed(
+        title="Entretien Refusé — Mission Row",
+        description="Entretien refusé : ❌ Vous avez été refusé lors de votre passage entretien.",
+        color=discord.Color.red()
+    )
+
+    embed.add_field(name="Motif :", value=motif, inline=False)
+    embed.add_field(name="Candidat", value=membre.mention, inline=False)
+    embed.add_field(name="District", value=DISTRICT_NAME, inline=False)
+
+    embed.set_thumbnail(url=LOGO_URL)
+    embed.set_image(url=ENTRETIEN_REFUSE_IMAGE_URL)
     embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
     return embed
 
@@ -498,8 +540,30 @@ async def manuel(ctx):
     await ctx.send(embed=embed, view=view)
 
 
-# ===== COMMANDES ENTRETIEN =====
-async def accepter_candidat(ctx, membre):
+# ===== ACTIONS CANDIDATURE / ENTRETIEN =====
+async def candidature_acceptee(ctx, membre):
+    role = get_role_by_name(ctx.guild, DISTRICT_NAME)
+
+    if role is None:
+        await ctx.send(f"❌ Le rôle **{DISTRICT_NAME}** est introuvable.")
+        return
+
+    try:
+        await membre.add_roles(role, reason=f"Candidature acceptée par {ctx.author}")
+    except discord.Forbidden:
+        await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Mission Row.")
+        return
+
+    embed = build_candidature_accept_embed(str(ctx.author), membre)
+    await ctx.send(content=membre.mention, embed=embed)
+
+
+async def candidature_refusee(ctx, membre, motif):
+    embed = build_candidature_refuse_embed(str(ctx.author), membre, motif)
+    await ctx.send(content=membre.mention, embed=embed)
+
+
+async def entretien_valide(ctx, membre):
     role = get_role_by_name(ctx.guild, DISTRICT_NAME)
 
     if role is None:
@@ -512,49 +576,53 @@ async def accepter_candidat(ctx, membre):
         await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Mission Row.")
         return
 
-    embed = build_accept_embed(str(ctx.author), membre)
+    embed = build_entretien_accept_embed(str(ctx.author), membre)
     await ctx.send(content=membre.mention, embed=embed)
 
 
-async def refuser_candidat(ctx, membre, motif):
-    embed = build_refuse_embed(str(ctx.author), membre, motif)
+async def entretien_refuse_action(ctx, membre, motif):
+    embed = build_entretien_refuse_embed(str(ctx.author), membre, motif)
     await ctx.send(content=membre.mention, embed=embed)
 
 
-@bot.command(name="Entretien_ok")
-@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
-async def entretien_ok(ctx, membre: discord.Member):
-    await accepter_candidat(ctx, membre)
-
-
-@bot.command(name="Entretien_refuser")
-@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
-async def entretien_refuser(ctx, membre: discord.Member, *, motif: str = "Aucun motif précisé"):
-    await refuser_candidat(ctx, membre, motif)
-
-
+# ===== COMMANDES CANDIDATURE =====
 @bot.command(name="accepte")
 @commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
 async def accepte(ctx, membre: discord.Member):
-    await accepter_candidat(ctx, membre)
+    await candidature_acceptee(ctx, membre)
 
 
 @bot.command(name="refuse")
 @commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
 async def refuse(ctx, membre: discord.Member, *, motif: str = "Aucun motif précisé"):
-    await refuser_candidat(ctx, membre, motif)
+    await candidature_refusee(ctx, membre, motif)
 
 
-@entretien_ok.error
-@entretien_refuser.error
+# ===== COMMANDES ENTRETIEN =====
+@bot.command(name="Entretien_ok")
+@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
+async def entretien_ok(ctx, membre: discord.Member):
+    await entretien_valide(ctx, membre)
+
+
+@bot.command(name="Entretien_refuser")
+@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
+async def entretien_refuser(ctx, membre: discord.Member, *, motif: str = "Aucun motif précisé"):
+    await entretien_refuse_action(ctx, membre, motif)
+
+
 @accepte.error
 @refuse.error
+@entretien_ok.error
+@entretien_refuser.error
 async def command_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("❌ Tu n'as pas le rôle autorisé pour utiliser cette commande.")
     elif isinstance(error, commands.MissingRequiredArgument):
         await ctx.send(
             "❌ Commande incorrecte.\n\n"
+            "`!accepte @pseudo`\n"
+            "`!refuse @pseudo motif`\n"
             "`!Entretien_ok @pseudo`\n"
             "`!Entretien_refuser @pseudo motif`"
         )
