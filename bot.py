@@ -6,10 +6,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
-load_dotenv(".env")
+load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# ===== CONFIG =====
 TICKET_CATEGORY_NAME = "tickets"
 ROLE_RECRUITER = "Recruteur"
 ROLE_CHIEF = "Chief"
@@ -18,29 +17,28 @@ ROLE_UNDER_CHIEF = "Under Chief"
 DISTRICT_NAME = "Mission Row"
 MANUAL_URL = "https://docs.google.com/presentation/d/102XSbfok9SQtR7faQkzvRZBhyzThu90muxOMMo6j6pY/edit?usp=drivesdk"
 
-# ===== IMAGES RESULTATS =====
 LOGO_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335411726155876/Capture_decran_2026-04-19_100807.png"
 ACCEPT_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335357946794155/Capture_decran_2026-04-19_100740.png"
 REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335388783317204/Capture_decran_2026-04-19_100754.png"
 
 DELAI_REFUS_JOURS = 2
 
-# ===== INTENTS =====
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
+pending_forms = {}
 
-# ===== HELPERS =====
-def get_role_by_name(guild: discord.Guild, role_name: str):
+
+def get_role_by_name(guild, role_name):
     return discord.utils.get(guild.roles, name=role_name)
 
 
-def get_category_by_name(guild: discord.Guild, category_name: str):
+def get_category_by_name(guild, category_name):
     return discord.utils.get(guild.categories, name=category_name)
 
 
-def parse_birthdate(date_str: str):
+def parse_birthdate(date_str):
     for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y"):
         try:
             return datetime.strptime(date_str.strip(), fmt)
@@ -49,46 +47,35 @@ def parse_birthdate(date_str: str):
     return None
 
 
-def calculate_age(birth_date: datetime) -> int:
+def calculate_age(birth_date):
     today = datetime.today()
     return today.year - birth_date.year - (
         (today.month, today.day) < (birth_date.month, birth_date.day)
     )
 
 
-def sanitize_channel_name(text: str) -> str:
+def sanitize_channel_name(text):
     text = text.lower().strip()
     text = re.sub(r"[^a-z0-9\-]+", "-", text)
     text = re.sub(r"-+", "-", text).strip("-")
     return text or "candidat"
 
 
-def format_date_fr(date_obj: datetime) -> str:
+def format_date_fr(date_obj):
     mois_fr = {
-        1: "janvier",
-        2: "février",
-        3: "mars",
-        4: "avril",
-        5: "mai",
-        6: "juin",
-        7: "juillet",
-        8: "août",
-        9: "septembre",
-        10: "octobre",
-        11: "novembre",
-        12: "décembre",
+        1: "janvier", 2: "février", 3: "mars", 4: "avril",
+        5: "mai", 6: "juin", 7: "juillet", 8: "août",
+        9: "septembre", 10: "octobre", 11: "novembre", 12: "décembre",
     }
     return f"{date_obj.day} {mois_fr[date_obj.month]} {date_obj.year} à {date_obj.strftime('%H:%M')}"
 
 
-# ===== EMBEDS RESULTATS =====
-def build_accept_embed(recruiter_name: str) -> discord.Embed:
+def build_accept_embed(recruiter_name):
     embed = discord.Embed(
         title="Résultat candidature",
         description=(
             "🎉 Félicitations ! Renommez-vous prénom + nom si ce n'est pas déjà fait.\n"
-            "Vous avez désormais **30 jours** pour vous présenter à une session d'entretien "
-            "(annoncées dans le canal de votre district)."
+            "Vous avez désormais **30 jours** pour vous présenter à une session d'entretien."
         ),
         color=discord.Color.green()
     )
@@ -98,7 +85,7 @@ def build_accept_embed(recruiter_name: str) -> discord.Embed:
     return embed
 
 
-def build_refuse_embed(recruiter_name: str, motif: str) -> discord.Embed:
+def build_refuse_embed(recruiter_name, motif):
     date_repost = datetime.now() + timedelta(days=DELAI_REFUS_JOURS)
 
     embed = discord.Embed(
@@ -109,7 +96,7 @@ def build_refuse_embed(recruiter_name: str, motif: str) -> discord.Embed:
     embed.add_field(
         name="Nouvelle candidature",
         value=(
-            f"Vous pourrez repostuler à nouveau dans **{DELAI_REFUS_JOURS} jours**, "
+            f"Vous pourrez repostuler dans **{DELAI_REFUS_JOURS} jours**, "
             f"soit le **{format_date_fr(date_repost)}**."
         ),
         inline=False
@@ -120,32 +107,12 @@ def build_refuse_embed(recruiter_name: str, motif: str) -> discord.Embed:
     return embed
 
 
-# ===== BOT =====
-pending_forms = {}
-
-
-class SASPBot(commands.Bot):
-    async def setup_hook(self):
-        self.add_view(RecruitmentPanelView())
-        self.add_view(RDVPanelView())
-        self.add_view(CloseTicketView())
-        print("Views persistantes enregistrées.")
-
-
-bot = SASPBot(
-    command_prefix="!",
-    intents=intents,
-    case_insensitive=True
-)
-
-
-# ===== VIEWS =====
 class ContinueRPView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=300)
 
     @discord.ui.button(label="➡️ Continuer vers la partie RP", style=discord.ButtonStyle.primary)
-    async def continue_rp(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def continue_rp(self, interaction, button):
         await interaction.response.send_modal(RecruitmentRPModal())
 
 
@@ -158,7 +125,7 @@ class CloseTicketView(discord.ui.View):
         style=discord.ButtonStyle.danger,
         custom_id="close_ticket_button_v1"
     )
-    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def close_ticket(self, interaction, button):
         await interaction.response.send_message("Fermeture du ticket dans 3 secondes...", ephemeral=True)
         await interaction.channel.delete(delay=3)
 
@@ -172,7 +139,7 @@ class RecruitmentPanelView(discord.ui.View):
         style=discord.ButtonStyle.primary,
         custom_id="recruitment_panel_button_v1"
     )
-    async def recrutement(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def recrutement(self, interaction, button):
         await interaction.response.send_modal(RecruitmentHRPModal())
 
 
@@ -181,7 +148,7 @@ class RDVPanelView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="📅 Prise de rendez-vous", style=discord.ButtonStyle.primary, custom_id="rdv_button_v1")
-    async def rdv(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def rdv(self, interaction, button):
         channel = await create_simple_ticket(interaction.guild, interaction.user, "rdv")
         if not channel:
             await interaction.response.send_message("Impossible de créer le ticket.", ephemeral=True)
@@ -189,7 +156,7 @@ class RDVPanelView(discord.ui.View):
         await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
     @discord.ui.button(label="💼 Proposition de contrat", style=discord.ButtonStyle.secondary, custom_id="contrat_button_v1")
-    async def contrat(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def contrat(self, interaction, button):
         channel = await create_simple_ticket(interaction.guild, interaction.user, "contrat")
         if not channel:
             await interaction.response.send_message("Impossible de créer le ticket.", ephemeral=True)
@@ -197,7 +164,7 @@ class RDVPanelView(discord.ui.View):
         await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
     @discord.ui.button(label="👮 Police Academy", style=discord.ButtonStyle.success, custom_id="academy_button_v1")
-    async def academy(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def academy(self, interaction, button):
         channel = await create_simple_ticket(interaction.guild, interaction.user, "academy")
         if not channel:
             await interaction.response.send_message("Impossible de créer le ticket.", ephemeral=True)
@@ -205,8 +172,18 @@ class RDVPanelView(discord.ui.View):
         await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
 
-# ===== TICKETS =====
-async def create_recruitment_ticket(guild: discord.Guild, user: discord.Member, form_data: dict):
+class SASPBot(commands.Bot):
+    async def setup_hook(self):
+        self.add_view(RecruitmentPanelView())
+        self.add_view(RDVPanelView())
+        self.add_view(CloseTicketView())
+        print("Views persistantes enregistrées.")
+
+
+bot = SASPBot(command_prefix="!", intents=intents, case_insensitive=True)
+
+
+async def create_recruitment_ticket(guild, user, form_data):
     category = get_category_by_name(guild, TICKET_CATEGORY_NAME)
     if not category:
         return None
@@ -224,12 +201,22 @@ async def create_recruitment_ticket(guild: discord.Guild, user: discord.Member, 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),
         user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
-        guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True, manage_messages=True, read_message_history=True),
+        guild.me: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            manage_channels=True,
+            manage_messages=True,
+            read_message_history=True
+        ),
     }
 
     for role in [role_recruiter, role_chief, role_under_chief]:
         if role:
-            overwrites[role] = discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
+            overwrites[role] = discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True
+            )
 
     channel = await guild.create_text_channel(
         name=channel_name[:95],
@@ -258,7 +245,7 @@ async def create_recruitment_ticket(guild: discord.Guild, user: discord.Member, 
     return channel
 
 
-async def create_simple_ticket(guild: discord.Guild, user: discord.Member, ticket_type: str):
+async def create_simple_ticket(guild, user, ticket_type):
     category = get_category_by_name(guild, TICKET_CATEGORY_NAME)
     if not category:
         return None
@@ -268,8 +255,7 @@ async def create_simple_ticket(guild: discord.Guild, user: discord.Member, ticke
     role_under_chief = get_role_by_name(guild, ROLE_UNDER_CHIEF)
 
     base_name = sanitize_channel_name(user.display_name)
-    prefixes = {"rdv": "rdv", "contrat": "contrat", "academy": "academy"}
-    channel_name = f"{prefixes.get(ticket_type, 'ticket')}-{base_name}"
+    channel_name = f"{ticket_type}-{base_name}"
 
     for ch in guild.text_channels:
         if ch.category_id == category.id and ch.name == channel_name:
@@ -278,12 +264,22 @@ async def create_simple_ticket(guild: discord.Guild, user: discord.Member, ticke
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),
         user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
-        guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True, manage_messages=True, read_message_history=True),
+        guild.me: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            manage_channels=True,
+            manage_messages=True,
+            read_message_history=True
+        ),
     }
 
     for role in [role_recruiter, role_chief, role_under_chief]:
         if role:
-            overwrites[role] = discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
+            overwrites[role] = discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True
+            )
 
     channel = await guild.create_text_channel(
         name=channel_name[:95],
@@ -292,21 +288,9 @@ async def create_simple_ticket(guild: discord.Guild, user: discord.Member, ticke
         topic=f"Ticket {ticket_type} | {user}"
     )
 
-    titles = {
-        "rdv": "📅 Ticket prise de rendez-vous",
-        "contrat": "💼 Ticket proposition de contrat",
-        "academy": "👮 Ticket Police Academy"
-    }
-
-    descs = {
-        "rdv": "Explique clairement ta demande de rendez-vous.",
-        "contrat": "Explique clairement ta proposition de contrat.",
-        "academy": "Explique clairement ta demande concernant la Police Academy."
-    }
-
     embed = discord.Embed(
-        title=titles.get(ticket_type, "🎫 Ticket"),
-        description=f"Bonjour {user.mention}.\n\n{descs.get(ticket_type, 'Explique ta demande.')}",
+        title="🎫 Ticket",
+        description=f"Bonjour {user.mention}.\nExplique clairement ta demande.",
         color=discord.Color.green()
     )
 
@@ -314,13 +298,12 @@ async def create_simple_ticket(guild: discord.Guild, user: discord.Member, ticke
     return channel
 
 
-# ===== MODALS =====
 class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - Mission Row"):
     unique_id = discord.ui.TextInput(label="ID Unique", required=True, max_length=100)
     irl_birthdate = discord.ui.TextInput(label="Date de naissance HRP (> 15 ans)", placeholder="JJ/MM/AAAA", required=True, max_length=10)
     fivem_hours = discord.ui.TextInput(label="Nombre d'heures sur le serveur", required=True, max_length=20)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction):
         birth_date = parse_birthdate(str(self.irl_birthdate))
 
         if birth_date is None:
@@ -338,7 +321,7 @@ class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - Mission Row"):
         }
 
         await interaction.response.send_message(
-            "✅ Partie HRP enregistrée. Clique sur le bouton ci-dessous pour passer à la partie RP.",
+            "✅ Partie HRP enregistrée. Clique sur le bouton pour passer à la partie RP.",
             view=ContinueRPView(),
             ephemeral=True
         )
@@ -346,12 +329,12 @@ class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - Mission Row"):
 
 class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - Mission Row"):
     rp_name = discord.ui.TextInput(label="Nom et Prénom", required=True, max_length=100)
-    rp_diploma = discord.ui.TextInput(label="Diplôme obtenu", placeholder="Doit être un High School Diploma ou GED", required=True, max_length=100)
+    rp_diploma = discord.ui.TextInput(label="Diplôme obtenu", required=True, max_length=100)
     rp_nationality = discord.ui.TextInput(label="Nationalité", required=True, max_length=100)
     rp_phone = discord.ui.TextInput(label="Numéro de téléphone", required=True, max_length=50)
     rp_motivation = discord.ui.TextInput(label="Lettre de motivation", required=True, style=discord.TextStyle.paragraph, max_length=1000)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction):
         saved = pending_forms.get(interaction.user.id)
 
         if not saved:
@@ -371,92 +354,22 @@ class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - Mission Row"):
         pending_forms.pop(interaction.user.id, None)
 
         if not channel:
-            await interaction.response.send_message(
-                "Impossible de créer le ticket. Vérifie la catégorie `tickets` et les permissions du bot.",
-                ephemeral=True
-            )
+            await interaction.response.send_message("Impossible de créer le ticket.", ephemeral=True)
             return
 
         await interaction.response.send_message(f"✅ Candidature envoyée dans {channel.mention}", ephemeral=True)
 
 
-# ===== COMMANDES SIMPLES =====
 @bot.command()
 async def test(ctx):
     await ctx.send("✅ Bot OK")
 
 
 @bot.command()
-async def manuel(ctx):
-    embed = discord.Embed(
-        title="Postuler au sein de la San Andreas State Police",
-        description=(
-            "Chères candidates, chers candidats de l'Académie de Police !\n\n"
-            "Nous vous rappelons que les recrutements sont constamment ouverts pour "
-            "intégrer notre exceptionnel service, la San Andreas Metropolitan Police."
-        ),
-        color=discord.Color.from_rgb(88, 20, 74)
-    )
-
-    embed.add_field(
-        name="📝 CONDITIONS HRP :",
-        value=(
-            "🔹 Avoir au moins 15 ans\n"
-            "🔹 L'expérience RP Police n'est pas obligatoire\n"
-            "🔹 Être sérieux et original\n"
-            "🔹 Ne pas être Blacklist"
-        ),
-        inline=False
-    )
-
-    embed.add_field(
-        name="👮 CONDITIONS RP :",
-        value=(
-            "🔹 Être âgé de 21 ans ou plus\n"
-            "🔹 Être un citoyen américain\n"
-            "🔹 Être diplômé d'un lycée américain et/ou GED\n"
-            "🔹 Disposer d'un casier judiciaire vierge\n"
-            "🔹 Disposer d'un permis de conduire valide\n"
-            "🔹 Être en bonne condition physique et mentale"
-        ),
-        inline=False
-    )
-
-    embed.add_field(
-        name="🚨 Important",
-        value=(
-            "🔹 Il est interdit d'envoyer un MP aux membres de l'Équipe recrutement.\n"
-            "🔹 Le salon recrutement est le seul salon pour vos questions.\n"
-            "🔹 Pas besoin de ping les recruteurs."
-        ),
-        inline=False
-    )
-
-    embed.add_field(
-        name="📌 Rappels",
-        value=(
-            "🔹 Si vous avez été refusé, vous devez attendre avant de repostuler.\n"
-            "🔹 Merci de ne pas créer de ticket pour rien.\n\n"
-            "Vous aurez une réponse sous 24 / 48h max."
-        ),
-        inline=False
-    )
-
-    view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="📖 Accéder au manuel", style=discord.ButtonStyle.link, url=MANUAL_URL))
-
-    await ctx.send(embed=embed, view=view)
-
-
-@bot.command()
 async def panel(ctx):
     embed = discord.Embed(
         title="🚨 Recrutement SASP",
-        description=(
-            "⚠️ Ce formulaire sera transmis au staff SASP.\n"
-            "Ne donne pas de mot de passe ni d'information sensible.\n\n"
-            "Clique sur le bouton pour commencer ta candidature."
-        ),
+        description="Clique sur le bouton pour commencer ta candidature.",
         color=discord.Color.blue()
     )
     embed.add_field(name="District ouvert", value=DISTRICT_NAME, inline=False)
@@ -467,19 +380,39 @@ async def panel(ctx):
 async def panel_rdv(ctx):
     embed = discord.Embed(
         title="📅 Prise de rendez-vous",
-        description=(
-            "Choisis le bouton correspondant à ta demande.\n\n"
-            "• Prise de rendez-vous\n"
-            "• Proposition de contrat\n"
-            "• Police Academy"
-        ),
+        description="Choisis le bouton correspondant à ta demande.",
         color=discord.Color.gold()
     )
     await ctx.send(embed=embed, view=RDVPanelView())
 
 
-# ===== COMMANDES ENTRETIEN / RESULTAT =====
-async def accepter_candidat(ctx, membre: discord.Member):
+@bot.command()
+async def manuel(ctx):
+    embed = discord.Embed(
+        title="Postuler au sein de la San Andreas State Police",
+        description="Voici les informations pour postuler à la Police Academy.",
+        color=discord.Color.from_rgb(88, 20, 74)
+    )
+
+    embed.add_field(
+        name="📝 CONDITIONS HRP :",
+        value="🔹 Avoir au moins 15 ans\n🔹 Être sérieux\n🔹 Ne pas être blacklist",
+        inline=False
+    )
+
+    embed.add_field(
+        name="👮 CONDITIONS RP :",
+        value="🔹 Être âgé de 21 ans ou plus\n🔹 Être citoyen américain\n🔹 Avoir un casier vierge",
+        inline=False
+    )
+
+    view = discord.ui.View()
+    view.add_item(discord.ui.Button(label="📖 Accéder au manuel", style=discord.ButtonStyle.link, url=MANUAL_URL))
+
+    await ctx.send(embed=embed, view=view)
+
+
+async def accepter_candidat(ctx, membre):
     role = get_role_by_name(ctx.guild, DISTRICT_NAME)
 
     if role is None:
@@ -496,26 +429,40 @@ async def accepter_candidat(ctx, membre: discord.Member):
     await ctx.send(content=membre.mention, embed=embed)
 
 
-async def refuser_candidat(ctx, membre: discord.Member, motif: str):
+async def refuser_candidat(ctx, membre, motif):
     embed = build_refuse_embed(str(ctx.author), motif)
     await ctx.send(content=membre.mention, embed=embed)
 
 
-@bot.command(name="Entretien_ok", aliases=["entretien_ok", "accepte", "accepté", "accept"])
+@bot.command(name="Entretien_ok")
 @commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
 async def entretien_ok(ctx, membre: discord.Member):
     await accepter_candidat(ctx, membre)
 
 
-@bot.command(name="Entretien_refuser", aliases=["entretien_refuser", "refuse", "refusé", "refuser"])
+@bot.command(name="Entretien_refuser")
 @commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
 async def entretien_refuser(ctx, membre: discord.Member, *, motif: str = "Aucun motif précisé"):
     await refuser_candidat(ctx, membre, motif)
 
 
+@bot.command(name="accepte")
+@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
+async def accepte(ctx, membre: discord.Member):
+    await accepter_candidat(ctx, membre)
+
+
+@bot.command(name="refuse")
+@commands.has_any_role(ROLE_RECRUITER, ROLE_CHIEF, ROLE_UNDER_CHIEF)
+async def refuse(ctx, membre: discord.Member, *, motif: str = "Aucun motif précisé"):
+    await refuser_candidat(ctx, membre, motif)
+
+
 @entretien_ok.error
 @entretien_refuser.error
-async def entretien_command_error(ctx, error):
+@accepte.error
+@refuse.error
+async def command_error(ctx, error):
     if isinstance(error, commands.MissingAnyRole):
         await ctx.send("❌ Tu n'as pas le rôle autorisé pour utiliser cette commande.")
     elif isinstance(error, commands.MissingRequiredArgument):
@@ -532,13 +479,12 @@ async def entretien_command_error(ctx, error):
         await ctx.send(f"❌ Erreur : {error}")
 
 
-# ===== EVENTS =====
 @bot.event
 async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
 
 
 if not TOKEN:
-    print("❌ ERREUR : DISCORD_TOKEN est introuvable dans le fichier .env")
+    print("❌ DISCORD_TOKEN introuvable dans Railway > Variables")
 else:
     bot.run(TOKEN)
