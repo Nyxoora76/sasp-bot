@@ -9,7 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+# ===== CONFIG =====
 TICKET_CATEGORY_NAME = "tickets"
+
 ROLE_RECRUITER = "Recruteur"
 ROLE_CHIEF = "Chief"
 ROLE_UNDER_CHIEF = "Under Chief"
@@ -23,6 +25,7 @@ REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1
 
 DELAI_REFUS_JOURS = 2
 
+# ===== INTENTS =====
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -30,6 +33,7 @@ intents.members = True
 pending_forms = {}
 
 
+# ===== HELPERS =====
 def get_role_by_name(guild, role_name):
     return discord.utils.get(guild.roles, name=role_name)
 
@@ -63,50 +67,70 @@ def sanitize_channel_name(text):
 
 def format_date_fr(date_obj):
     mois_fr = {
-        1: "janvier", 2: "février", 3: "mars", 4: "avril",
-        5: "mai", 6: "juin", 7: "juillet", 8: "août",
-        9: "septembre", 10: "octobre", 11: "novembre", 12: "décembre",
+        1: "janvier",
+        2: "février",
+        3: "mars",
+        4: "avril",
+        5: "mai",
+        6: "juin",
+        7: "juillet",
+        8: "août",
+        9: "septembre",
+        10: "octobre",
+        11: "novembre",
+        12: "décembre",
     }
     return f"{date_obj.day} {mois_fr[date_obj.month]} {date_obj.year} à {date_obj.strftime('%H:%M')}"
 
 
-def build_accept_embed(recruiter_name):
+# ===== EMBEDS RESULTATS =====
+def build_accept_embed(recruiter_name, membre):
     embed = discord.Embed(
-        title="Résultat candidature",
+        title="Entretien validé ✅",
         description=(
-            "🎉 Félicitations ! Renommez-vous prénom + nom si ce n'est pas déjà fait.\n"
-            "Vous avez désormais **30 jours** pour vous présenter à une session d'entretien."
+            "✅ Félicitations, votre entretien est validé.\n"
+            "Vous avez désormais **30 jours** pour poursuivre votre parcours."
         ),
         color=discord.Color.green()
     )
+
+    embed.add_field(name="Candidat :", value=membre.mention, inline=False)
+    embed.add_field(name="District :", value=DISTRICT_NAME, inline=False)
+
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=ACCEPT_IMAGE_URL)
     embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
     return embed
 
 
-def build_refuse_embed(recruiter_name, motif):
+def build_refuse_embed(recruiter_name, membre, motif):
     date_repost = datetime.now() + timedelta(days=DELAI_REFUS_JOURS)
 
     embed = discord.Embed(
-        title="Résultat candidature",
+        title="Entretien refusé ❌",
+        description="❌ Votre entretien a été refusé.",
         color=discord.Color.red()
     )
+
+    embed.add_field(name="Candidat :", value=membre.mention, inline=False)
+    embed.add_field(name="District :", value=DISTRICT_NAME, inline=False)
     embed.add_field(name="Motif :", value=motif, inline=False)
     embed.add_field(
-        name="Nouvelle candidature",
+        name="Nouvelle candidature :",
         value=(
             f"Vous pourrez repostuler dans **{DELAI_REFUS_JOURS} jours**, "
             f"soit le **{format_date_fr(date_repost)}**."
         ),
         inline=False
     )
+
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=REFUSE_IMAGE_URL)
     embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
     return embed
 
 
+# ===== VIEWS =====
 class ContinueRPView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=300)
@@ -172,6 +196,7 @@ class RDVPanelView(discord.ui.View):
         await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
 
+# ===== BOT =====
 class SASPBot(commands.Bot):
     async def setup_hook(self):
         self.add_view(RecruitmentPanelView())
@@ -180,9 +205,14 @@ class SASPBot(commands.Bot):
         print("Views persistantes enregistrées.")
 
 
-bot = SASPBot(command_prefix="!", intents=intents, case_insensitive=True)
+bot = SASPBot(
+    command_prefix="!",
+    intents=intents,
+    case_insensitive=True
+)
 
 
+# ===== TICKETS =====
 async def create_recruitment_ticket(guild, user, form_data):
     category = get_category_by_name(guild, TICKET_CATEGORY_NAME)
     if not category:
@@ -230,6 +260,7 @@ async def create_recruitment_ticket(guild, user, form_data):
         description=f"Bienvenue {user.mention}, votre candidature a bien été envoyée.",
         color=discord.Color.blurple()
     )
+
     embed.add_field(name="District", value=DISTRICT_NAME, inline=False)
     embed.add_field(name="HRP - ID Unique", value=form_data["unique_id"], inline=True)
     embed.add_field(name="HRP - Date de naissance", value=form_data["irl_birthdate"], inline=True)
@@ -239,6 +270,7 @@ async def create_recruitment_ticket(guild, user, form_data):
     embed.add_field(name="RP - Nationalité", value=form_data["rp_nationality"], inline=True)
     embed.add_field(name="RP - Numéro de téléphone", value=form_data["rp_phone"], inline=True)
     embed.add_field(name="RP - Lettre de motivation", value=form_data["rp_motivation"], inline=False)
+
     embed.set_footer(text="San Andreas Police Academy")
 
     await channel.send(content=user.mention, embed=embed, view=CloseTicketView())
@@ -288,9 +320,21 @@ async def create_simple_ticket(guild, user, ticket_type):
         topic=f"Ticket {ticket_type} | {user}"
     )
 
+    titles = {
+        "rdv": "📅 Ticket prise de rendez-vous",
+        "contrat": "💼 Ticket proposition de contrat",
+        "academy": "👮 Ticket Police Academy"
+    }
+
+    descs = {
+        "rdv": "Explique clairement ta demande de rendez-vous.",
+        "contrat": "Explique clairement ta proposition de contrat.",
+        "academy": "Explique clairement ta demande concernant la Police Academy."
+    }
+
     embed = discord.Embed(
-        title="🎫 Ticket",
-        description=f"Bonjour {user.mention}.\nExplique clairement ta demande.",
+        title=titles.get(ticket_type, "🎫 Ticket"),
+        description=f"Bonjour {user.mention}.\n\n{descs.get(ticket_type, 'Explique ta demande.')}",
         color=discord.Color.green()
     )
 
@@ -298,9 +342,15 @@ async def create_simple_ticket(guild, user, ticket_type):
     return channel
 
 
+# ===== MODALS =====
 class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - Mission Row"):
     unique_id = discord.ui.TextInput(label="ID Unique", required=True, max_length=100)
-    irl_birthdate = discord.ui.TextInput(label="Date de naissance HRP (> 15 ans)", placeholder="JJ/MM/AAAA", required=True, max_length=10)
+    irl_birthdate = discord.ui.TextInput(
+        label="Date de naissance HRP (> 15 ans)",
+        placeholder="JJ/MM/AAAA",
+        required=True,
+        max_length=10
+    )
     fivem_hours = discord.ui.TextInput(label="Nombre d'heures sur le serveur", required=True, max_length=20)
 
     async def on_submit(self, interaction):
@@ -332,7 +382,12 @@ class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - Mission Row"):
     rp_diploma = discord.ui.TextInput(label="Diplôme obtenu", required=True, max_length=100)
     rp_nationality = discord.ui.TextInput(label="Nationalité", required=True, max_length=100)
     rp_phone = discord.ui.TextInput(label="Numéro de téléphone", required=True, max_length=50)
-    rp_motivation = discord.ui.TextInput(label="Lettre de motivation", required=True, style=discord.TextStyle.paragraph, max_length=1000)
+    rp_motivation = discord.ui.TextInput(
+        label="Lettre de motivation",
+        required=True,
+        style=discord.TextStyle.paragraph,
+        max_length=1000
+    )
 
     async def on_submit(self, interaction):
         saved = pending_forms.get(interaction.user.id)
@@ -354,12 +409,16 @@ class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - Mission Row"):
         pending_forms.pop(interaction.user.id, None)
 
         if not channel:
-            await interaction.response.send_message("Impossible de créer le ticket.", ephemeral=True)
+            await interaction.response.send_message(
+                "Impossible de créer le ticket. Vérifie la catégorie `tickets` et les permissions du bot.",
+                ephemeral=True
+            )
             return
 
         await interaction.response.send_message(f"✅ Candidature envoyée dans {channel.mention}", ephemeral=True)
 
 
+# ===== COMMANDES =====
 @bot.command()
 async def test(ctx):
     await ctx.send("✅ Bot OK")
@@ -369,7 +428,11 @@ async def test(ctx):
 async def panel(ctx):
     embed = discord.Embed(
         title="🚨 Recrutement SASP",
-        description="Clique sur le bouton pour commencer ta candidature.",
+        description=(
+            "⚠️ Ce formulaire sera transmis au staff SASP.\n"
+            "Ne donne pas de mot de passe ni d'information sensible.\n\n"
+            "Clique sur le bouton pour commencer ta candidature."
+        ),
         color=discord.Color.blue()
     )
     embed.add_field(name="District ouvert", value=DISTRICT_NAME, inline=False)
@@ -380,7 +443,12 @@ async def panel(ctx):
 async def panel_rdv(ctx):
     embed = discord.Embed(
         title="📅 Prise de rendez-vous",
-        description="Choisis le bouton correspondant à ta demande.",
+        description=(
+            "Choisis le bouton correspondant à ta demande.\n\n"
+            "• Prise de rendez-vous\n"
+            "• Proposition de contrat\n"
+            "• Police Academy"
+        ),
         color=discord.Color.gold()
     )
     await ctx.send(embed=embed, view=RDVPanelView())
@@ -396,22 +464,41 @@ async def manuel(ctx):
 
     embed.add_field(
         name="📝 CONDITIONS HRP :",
-        value="🔹 Avoir au moins 15 ans\n🔹 Être sérieux\n🔹 Ne pas être blacklist",
+        value=(
+            "🔹 Avoir au moins 15 ans\n"
+            "🔹 L'expérience RP Police n'est pas obligatoire\n"
+            "🔹 Être sérieux et original\n"
+            "🔹 Ne pas être Blacklist"
+        ),
         inline=False
     )
 
     embed.add_field(
         name="👮 CONDITIONS RP :",
-        value="🔹 Être âgé de 21 ans ou plus\n🔹 Être citoyen américain\n🔹 Avoir un casier vierge",
+        value=(
+            "🔹 Être âgé de 21 ans ou plus\n"
+            "🔹 Être un citoyen américain\n"
+            "🔹 Être diplômé d'un lycée américain et/ou GED\n"
+            "🔹 Disposer d'un casier judiciaire vierge\n"
+            "🔹 Disposer d'un permis de conduire valide\n"
+            "🔹 Être en bonne condition physique et mentale"
+        ),
         inline=False
     )
 
     view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="📖 Accéder au manuel", style=discord.ButtonStyle.link, url=MANUAL_URL))
+    view.add_item(
+        discord.ui.Button(
+            label="📖 Accéder au manuel",
+            style=discord.ButtonStyle.link,
+            url=MANUAL_URL
+        )
+    )
 
     await ctx.send(embed=embed, view=view)
 
 
+# ===== COMMANDES ENTRETIEN =====
 async def accepter_candidat(ctx, membre):
     role = get_role_by_name(ctx.guild, DISTRICT_NAME)
 
@@ -420,17 +507,17 @@ async def accepter_candidat(ctx, membre):
         return
 
     try:
-        await membre.add_roles(role, reason=f"Candidature acceptée par {ctx.author}")
+        await membre.add_roles(role, reason=f"Entretien validé par {ctx.author}")
     except discord.Forbidden:
         await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Mission Row.")
         return
 
-    embed = build_accept_embed(str(ctx.author))
+    embed = build_accept_embed(str(ctx.author), membre)
     await ctx.send(content=membre.mention, embed=embed)
 
 
 async def refuser_candidat(ctx, membre, motif):
-    embed = build_refuse_embed(str(ctx.author), motif)
+    embed = build_refuse_embed(str(ctx.author), membre, motif)
     await ctx.send(content=membre.mention, embed=embed)
 
 
@@ -479,6 +566,7 @@ async def command_error(ctx, error):
         await ctx.send(f"❌ Erreur : {error}")
 
 
+# ===== EVENTS =====
 @bot.event
 async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
