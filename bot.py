@@ -16,7 +16,10 @@ ROLE_RECRUITER = "Recruteur"
 ROLE_CHIEF = "Chief"
 ROLE_UNDER_CHIEF = "Under Chief"
 
-DISTRICT_NAME = "Mission Row"
+DEPARTMENT_NAME = "LSPD"
+DISTRICT_NAME = "Vespucci"
+FOOTER_TEXT = "LSPD Vespucci | Recruteur"
+
 MANUAL_URL = "https://docs.google.com/presentation/d/102XSbfok9SQtR7faQkzvRZBhyzThu90muxOMMo6j6pY/edit?usp=drivesdk"
 
 LOGO_URL = "https://cdn.discordapp.com/attachments/1483550389436678348/1495335411726155876/Capture_decran_2026-04-19_100807.png"
@@ -28,7 +31,6 @@ ENTRETIEN_REFUSE_IMAGE_URL = "https://cdn.discordapp.com/attachments/14835503894
 
 DELAI_REFUS_JOURS = 2
 
-# ===== INTENTS =====
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -36,7 +38,6 @@ intents.members = True
 pending_forms = {}
 
 
-# ===== HELPERS =====
 def get_role_by_name(guild, role_name):
     return discord.utils.get(guild.roles, name=role_name)
 
@@ -70,18 +71,9 @@ def sanitize_channel_name(text):
 
 def format_date_fr(date_obj):
     mois_fr = {
-        1: "janvier",
-        2: "février",
-        3: "mars",
-        4: "avril",
-        5: "mai",
-        6: "juin",
-        7: "juillet",
-        8: "août",
-        9: "septembre",
-        10: "octobre",
-        11: "novembre",
-        12: "décembre",
+        1: "janvier", 2: "février", 3: "mars", 4: "avril",
+        5: "mai", 6: "juin", 7: "juillet", 8: "août",
+        9: "septembre", 10: "octobre", 11: "novembre", 12: "décembre",
     }
     return f"{date_obj.day} {mois_fr[date_obj.month]} {date_obj.year} à {date_obj.strftime('%H:%M')}"
 
@@ -89,7 +81,7 @@ def format_date_fr(date_obj):
 # ===== EMBEDS CANDIDATURE =====
 def build_candidature_accept_embed(recruiter_name, membre):
     embed = discord.Embed(
-        title="Candidature Acceptée — Mission Row",
+        title="Candidature Acceptée — Vespucci",
         description=f"Le dossier de {membre.mention} a été retenu.",
         color=discord.Color.green()
     )
@@ -104,7 +96,7 @@ def build_candidature_accept_embed(recruiter_name, membre):
 
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=CANDIDATURE_ACCEPT_IMAGE_URL)
-    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    embed.set_footer(text=f"{FOOTER_TEXT} : {recruiter_name}")
     return embed
 
 
@@ -112,7 +104,7 @@ def build_candidature_refuse_embed(recruiter_name, membre, motif):
     date_repost = datetime.now() + timedelta(days=DELAI_REFUS_JOURS)
 
     embed = discord.Embed(
-        title="Candidature Refusée — Mission Row",
+        title="Candidature Refusée — Vespucci",
         description=f"Le dossier de {membre.mention} n'a pas été retenu.",
         color=discord.Color.red()
     )
@@ -131,14 +123,14 @@ def build_candidature_refuse_embed(recruiter_name, membre, motif):
 
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=CANDIDATURE_REFUSE_IMAGE_URL)
-    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    embed.set_footer(text=f"{FOOTER_TEXT} : {recruiter_name}")
     return embed
 
 
 # ===== EMBEDS ENTRETIEN =====
 def build_entretien_accept_embed(recruiter_name, membre):
     embed = discord.Embed(
-        title="Entretien Validé — Mission Row",
+        title="Entretien Validé — Vespucci",
         description=(
             "Entretien validé : ✅ Félicitations, votre entretien est validé.\n"
             "Vous avez **30 jours** pour poursuivre votre parcours."
@@ -151,13 +143,13 @@ def build_entretien_accept_embed(recruiter_name, membre):
 
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=ENTRETIEN_ACCEPT_IMAGE_URL)
-    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    embed.set_footer(text=f"{FOOTER_TEXT} : {recruiter_name}")
     return embed
 
 
 def build_entretien_refuse_embed(recruiter_name, membre, motif):
     embed = discord.Embed(
-        title="Entretien Refusé — Mission Row",
+        title="Entretien Refusé — Vespucci",
         description="Entretien refusé : ❌ Vous avez été refusé lors de votre passage entretien.",
         color=discord.Color.red()
     )
@@ -168,7 +160,7 @@ def build_entretien_refuse_embed(recruiter_name, membre, motif):
 
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_image(url=ENTRETIEN_REFUSE_IMAGE_URL)
-    embed.set_footer(text=f"San Andreas Police Academy | Recruteur : {recruiter_name}")
+    embed.set_footer(text=f"{FOOTER_TEXT} : {recruiter_name}")
     return embed
 
 
@@ -201,7 +193,7 @@ class RecruitmentPanelView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(
-        label="🚔 Recrutement",
+        label="🚔 Recrutement LSPD",
         style=discord.ButtonStyle.primary,
         custom_id="recruitment_panel_button_v1"
     )
@@ -238,8 +230,7 @@ class RDVPanelView(discord.ui.View):
         await interaction.response.send_message(f"✅ Ton ticket a été créé : {channel.mention}", ephemeral=True)
 
 
-# ===== BOT =====
-class SASPBot(commands.Bot):
+class LSPDBot(commands.Bot):
     async def setup_hook(self):
         self.add_view(RecruitmentPanelView())
         self.add_view(RDVPanelView())
@@ -247,11 +238,7 @@ class SASPBot(commands.Bot):
         print("Views persistantes enregistrées.")
 
 
-bot = SASPBot(
-    command_prefix="!",
-    intents=intents,
-    case_insensitive=True
-)
+bot = LSPDBot(command_prefix="!", intents=intents, case_insensitive=True)
 
 
 # ===== TICKETS =====
@@ -298,7 +285,7 @@ async def create_recruitment_ticket(guild, user, form_data):
     )
 
     embed = discord.Embed(
-        title="📁 Nouvelle candidature SASP",
+        title="📁 Nouvelle candidature LSPD",
         description=f"Bienvenue {user.mention}, votre candidature a bien été envoyée.",
         color=discord.Color.blurple()
     )
@@ -313,7 +300,7 @@ async def create_recruitment_ticket(guild, user, form_data):
     embed.add_field(name="RP - Numéro de téléphone", value=form_data["rp_phone"], inline=True)
     embed.add_field(name="RP - Lettre de motivation", value=form_data["rp_motivation"], inline=False)
 
-    embed.set_footer(text="San Andreas Police Academy")
+    embed.set_footer(text="LSPD Vespucci")
 
     await channel.send(content=user.mention, embed=embed, view=CloseTicketView())
     return channel
@@ -385,7 +372,7 @@ async def create_simple_ticket(guild, user, ticket_type):
 
 
 # ===== MODALS =====
-class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - Mission Row"):
+class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - LSPD Vespucci"):
     unique_id = discord.ui.TextInput(label="ID Unique", required=True, max_length=100)
     irl_birthdate = discord.ui.TextInput(
         label="Date de naissance HRP (> 15 ans)",
@@ -419,7 +406,7 @@ class RecruitmentHRPModal(discord.ui.Modal, title="Partie HRP - Mission Row"):
         )
 
 
-class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - Mission Row"):
+class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - LSPD Vespucci"):
     rp_name = discord.ui.TextInput(label="Nom et Prénom", required=True, max_length=100)
     rp_diploma = discord.ui.TextInput(label="Diplôme obtenu", required=True, max_length=100)
     rp_nationality = discord.ui.TextInput(label="Nationalité", required=True, max_length=100)
@@ -463,15 +450,15 @@ class RecruitmentRPModal(discord.ui.Modal, title="Partie RP - Mission Row"):
 # ===== COMMANDES =====
 @bot.command()
 async def test(ctx):
-    await ctx.send("✅ Bot OK")
+    await ctx.send("✅ Bot LSPD Vespucci OK")
 
 
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
-        title="🚨 Recrutement SASP",
+        title="🚨 Recrutement LSPD Vespucci",
         description=(
-            "⚠️ Ce formulaire sera transmis au staff SASP.\n"
+            "⚠️ Ce formulaire sera transmis au staff LSPD Vespucci.\n"
             "Ne donne pas de mot de passe ni d'information sensible.\n\n"
             "Clique sur le bouton pour commencer ta candidature."
         ),
@@ -499,9 +486,9 @@ async def panel_rdv(ctx):
 @bot.command()
 async def manuel(ctx):
     embed = discord.Embed(
-        title="Postuler au sein de la San Andreas State Police",
-        description="Voici les informations pour postuler à la Police Academy.",
-        color=discord.Color.from_rgb(88, 20, 74)
+        title="Postuler au sein du LSPD Vespucci",
+        description="Voici les informations pour postuler au LSPD Vespucci.",
+        color=discord.Color.blue()
     )
 
     embed.add_field(
@@ -551,7 +538,7 @@ async def candidature_acceptee(ctx, membre):
     try:
         await membre.add_roles(role, reason=f"Candidature acceptée par {ctx.author}")
     except discord.Forbidden:
-        await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Mission Row.")
+        await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Vespucci.")
         return
 
     embed = build_candidature_accept_embed(str(ctx.author), membre)
@@ -573,7 +560,7 @@ async def entretien_valide(ctx, membre):
     try:
         await membre.add_roles(role, reason=f"Entretien validé par {ctx.author}")
     except discord.Forbidden:
-        await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Mission Row.")
+        await ctx.send("❌ Je ne peux pas ajouter le rôle. Mets le rôle du bot au-dessus du rôle Vespucci.")
         return
 
     embed = build_entretien_accept_embed(str(ctx.author), membre)
@@ -634,7 +621,6 @@ async def command_error(ctx, error):
         await ctx.send(f"❌ Erreur : {error}")
 
 
-# ===== EVENTS =====
 @bot.event
 async def on_ready():
     print(f"✅ Connecté en tant que {bot.user}")
